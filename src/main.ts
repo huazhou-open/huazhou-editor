@@ -25,13 +25,6 @@ function createWindow(): void {
     // __dirname points to dist/ after compilation
     // index.html is copied to dist/ by the build process
     mainWindow.loadFile(path.join(__dirname, 'index.html'));
-        },
-        backgroundColor: '#ffffff',
-        titleBarStyle: 'default',
-        show: false
-    });
-
-    mainWindow.loadFile(path.join(__dirname, 'index.html'));
 
     mainWindow.once('ready-to-show', () => {
         mainWindow?.show();
@@ -41,27 +34,27 @@ function createWindow(): void {
         mainWindow = null;
     });
 
-    // Handle unsaved changes prompt
-    mainWindow.on('before-quit', async (e) => {
-        if (isUnsaved && mainWindow) {
-            e.preventDefault();
-            const result = await showUnsavedDialog();
-            if (result === 'save') {
-                await saveFile();
-                app.quit();
-            } else if (result === 'dont-save') {
-                isUnsaved = false;
-                app.quit();
-            }
-        }
-    });
-
     // Initialize menu
     createMenu();
 }
 
+// Handle unsaved changes prompt on app quit
+app.on('before-quit', async (e: any) => {
+    if (isUnsaved && mainWindow) {
+        e.preventDefault();
+        const result = await showUnsavedDialog();
+        if (result === 'save') {
+            await saveFile();
+            app.quit();
+        } else if (result === 'dont-save') {
+            isUnsaved = false;
+            app.quit();
+        }
+    }
+});
+
 function createMenu(): void {
-    const template = [
+    const template: any = [
         {
             label: '文件',
             submenu: [
@@ -249,14 +242,14 @@ async function openFile(): Promise<void> {
         if (result === 'save') await saveFile();
     }
 
-    const { filePaths } = await dialog.showOpenDialog(mainWindow!, {
+    const result = await dialog.showOpenDialog(mainWindow!, {
         filters: [{ name: 'Markdown Files', extensions: ['md', 'markdown', 'txt'] }],
         properties: ['openFile']
     });
 
-    if (filePaths && filePaths.length > 0) {
-        const content = await fs.readFile(filePaths[0], 'utf-8');
-        currentFilePath = filePaths[0];
+    if (result.filePaths && result.filePaths.length > 0) {
+        const content = await fs.readFile(result.filePaths[0], 'utf-8');
+        currentFilePath = result.filePaths[0];
         isUnsaved = false;
         updateWindowTitle();
         mainWindow?.webContents.send('file-open', { content, filePath: currentFilePath });
@@ -276,23 +269,23 @@ async function saveFile(): Promise<void> {
 }
 
 async function saveFileAs(): Promise<void> {
-    const { filePath } = await dialog.showSaveDialog(mainWindow!, {
+    const result = await dialog.showSaveDialog(mainWindow!, {
         filters: [{ name: 'Markdown Files', extensions: ['md', 'markdown', 'txt'] }],
         defaultPath: currentFilePath || 'untitled.md'
     });
 
-    if (filePath) {
+    if (result.filePath) {
         const content = await getEditorContent();
-        await fs.writeFile(filePath, content, 'utf-8');
-        currentFilePath = filePath;
+        await fs.writeFile(result.filePath, content, 'utf-8');
+        currentFilePath = result.filePath;
         isUnsaved = false;
         updateWindowTitle();
-        mainWindow?.webContents.send('file-saved', { filePath });
+        mainWindow?.webContents.send('file-saved', { filePath: result.filePath });
     }
 }
 
 async function showUnsavedDialog(): Promise<string> {
-    const { response } = await dialog.showMessageBox(mainWindow!, {
+    const result = await dialog.showMessageBox(mainWindow!, {
         type: 'warning',
         buttons: ['保存', '不保存', '取消'],
         defaultId: 0,
@@ -301,7 +294,7 @@ async function showUnsavedDialog(): Promise<string> {
         detail: '您是否要保存对文件的更改？'
     });
 
-    return ['save', 'dont-save', 'cancel'][response];
+    return ['save', 'dont-save', 'cancel'][result.response];
 }
 
 function showAboutDialog(): void {

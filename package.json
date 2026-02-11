@@ -56,7 +56,6 @@
   },
   "devDependencies": {
     "@types/codemirror": "^5.60.17",
-    "@types/electron": "^1.4.38",
     "@types/marked": "^5.0.2",
     "@types/node": "^25.2.3",
     "copyfiles": "^2.4.1",

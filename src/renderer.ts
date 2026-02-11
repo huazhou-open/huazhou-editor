@@ -1,3 +1,7 @@
+// Global type declarations for libraries loaded via script tags
+declare const CodeMirror: any;
+declare const marked: any;
+
 // Initialize CodeMirror editor
 const editor = CodeMirror.fromTextArea(document.getElementById('editor') as HTMLTextAreaElement, {
     mode: 'markdown',
@@ -44,10 +48,10 @@ function updatePreview(): void {
         // marked v12+ - try both methods
         if (typeof marked === 'function') {
             html = marked(markdown);
-        } else if (marked && typeof (marked as any).parse === 'function') {
-            html = (marked as any).parse(markdown);
-        } else if (marked && typeof (marked as any).marked === 'function') {
-            html = (marked as any).marked(markdown);
+        } else if (marked && typeof marked.parse === 'function') {
+            html = marked.parse(markdown);
+        } else if (marked && typeof marked.marked === 'function') {
+            html = marked.marked(markdown);
         } else {
             html = markdown; // fallback: show raw text
         }
@@ -65,7 +69,7 @@ function updateStats(): void {
     const lines = editor.lineCount();
 
     const chars = content.length;
-    const words = content.trim().split(/\s+/).filter(w => w.length > 0).length;
+    const words = content.trim().split(/\s+/).filter((w: string) => w.length > 0).length;
 
     wordCount.textContent = `${words} 字`;
     wordCount.title = '字数统计';
@@ -106,7 +110,7 @@ function updateTOC(): void {
 }
 
 // Editor change handler
-editor.on('change', (cm, changeObj) => {
+editor.on('change', (_cm: any, changeObj: any) => {
     console.log('Editor changed:', changeObj);
     updatePreview();
     updateStats();
