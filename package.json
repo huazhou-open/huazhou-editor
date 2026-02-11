@@ -6,10 +6,13 @@
   "author": "Huazhou Technology",
   "license": "MIT",
   "scripts": {
-    "compile": "tsc && copyfiles src/index.html src/editor.css dist",
-    "watch": "tsc --watch",
+    "compile": "tsc && copyfiles src/preload.ts distRenderer && tsc -p tsconfig.preload.json && tsc -p tsconfig.main.json && vite build && copyfiles src/editor.css distRenderer",
+    "compile:main": "tsc -p tsconfig.main.json && copyfiles src/preload.ts distRenderer && tsc -p tsconfig.preload.json",
+    "watch": "vite build --watch",
+    "dev:renderer": "vite",
+    "dev": "npm run compile:main && vite build && copyfiles src/index.vue.html dist/index.html && electron . --dev",
     "start": "npm run compile && electron .",
-    "dev": "npm run compile && electron . --dev",
+    "build:renderer": "vite build && copyfiles src/index.vue.html dist/index.html",
     "build:win": "npm run compile && electron-builder --win",
     "build:mac": "npm run compile && electron-builder --mac",
     "build:linux": "npm run compile && electron-builder --linux"
@@ -22,8 +25,8 @@
     },
     "files": [
       "dist/**/*",
+      "distRenderer/**/*",
       "resources/**/*",
-      "src/index.html",
       "src/editor.css"
     ],
     "win": {
@@ -51,8 +54,12 @@
     }
   },
   "dependencies": {
+    "@vitejs/plugin-vue": "^5.2.4",
     "codemirror": "^5.65.16",
-    "marked": "^12.0.0"
+    "marked": "^12.0.0",
+    "vite": "^5.4.21",
+    "vue": "^3.5.28",
+    "vue-tsc": "^3.2.4"
   },
   "devDependencies": {
     "@types/codemirror": "^5.60.17",

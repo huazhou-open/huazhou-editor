@@ -1,12 +1,20 @@
-import { app, BrowserWindow, Menu, dialog, ipcMain, IpcMainEvent } from 'electron';
-import * as path from 'path';
+import { app, BrowserWindow, Menu, dialog, ipcMain, Event } from 'electron';
+import path from 'path';
 import { promises as fs } from 'fs';
 
 let mainWindow: BrowserWindow | null = null;
 let currentFilePath: string | null = null;
+let currentFolderPath: string | null = null;
 let isUnsaved = false;
 
-function createWindow(): void {
+interface FileTreeNode {
+  name: string;
+  path: string;
+  isDirectory: boolean;
+  children?: FileTreeNode[];
+}
+
+function createWindow() {
     mainWindow = new BrowserWindow({
         width: 1400,
         height: 900,
@@ -15,16 +23,14 @@ function createWindow(): void {
         webPreferences: {
             nodeIntegration: false,
             contextIsolation: true,
-            preload: path.join(__dirname, 'preload.js')
+            preload: path.join(__dirname, '../distRenderer/preload.js')
         },
         backgroundColor: '#ffffff',
         titleBarStyle: 'default',
         show: false
     });
 
-    // __dirname points to dist/ after compilation
-    // index.html is copied to dist/ by the build process
-    mainWindow.loadFile(path.join(__dirname, 'index.html'));
+    mainWindow.loadFile(path.join(__dirname, '../dist/index.html'));
 
     mainWindow.once('ready-to-show', () => {
         mainWindow?.show();
@@ -38,23 +44,8 @@ function createWindow(): void {
     createMenu();
 }
 
-// Handle unsaved changes prompt on app quit
-app.on('before-quit', async (e: any) => {
-    if (isUnsaved && mainWindow) {
-        e.preventDefault();
-        const result = await showUnsavedDialog();
-        if (result === 'save') {
-            await saveFile();
-            app.quit();
-        } else if (result === 'dont-save') {
-            isUnsaved = false;
-            app.quit();
-        }
-    }
-});
-
-function createMenu(): void {
-    const template: any = [
+function createMenu() {
+    const template = [
         {
             label: '文件',
             submenu: [
@@ -64,9 +55,13 @@ function createMenu(): void {
                     click: () => newFile()
                 },
                 {
-                    label: '打开...',
+                    label: '打开文件...',
                     accelerator: 'CmdOrCtrl+O',
                     click: () => openFile()
+                },
+                {
+                    label: '打开文件夹...',
+                    click: () => openFolder()
                 },
                 {
                     label: '保存',
@@ -115,7 +110,7 @@ function createMenu(): void {
                 {
                     label: '切换全屏',
                     accelerator: 'F11',
-                    click: () => mainWindow?.setFullScreen(!!mainWindow?.isFullScreen())
+                    click: () => mainWindow?.setFullScreen(!mainWindow.isFullScreen())
                 },
                 {
                     label: '缩小',
@@ -215,14 +210,14 @@ function createMenu(): void {
                 }
             ]
         }
-    ];
+    ] as any;
 
     const menu = Menu.buildFromTemplate(template);
     Menu.setApplicationMenu(menu);
 }
 
 // File operations
-async function newFile(): Promise<void> {
+async function newFile() {
     if (isUnsaved) {
         const result = await showUnsavedDialog();
         if (result === 'cancel') return;
@@ -235,57 +230,114 @@ async function newFile(): Promise<void> {
     mainWindow?.webContents.send('file-new');
 }
 
-async function openFile(): Promise<void> {
+async function openFile() {
     if (isUnsaved) {
         const result = await showUnsavedDialog();
         if (result === 'cancel') return;
         if (result === 'save') await saveFile();
     }
 
-    const result = await dialog.showOpenDialog(mainWindow!, {
+    const { filePaths } = await dialog.showOpenDialog(mainWindow!, {
         filters: [{ name: 'Markdown Files', extensions: ['md', 'markdown', 'txt'] }],
         properties: ['openFile']
     });
 
-    if (result.filePaths && result.filePaths.length > 0) {
-        const content = await fs.readFile(result.filePaths[0], 'utf-8');
-        currentFilePath = result.filePaths[0];
+    if (filePaths && filePaths.length > 0) {
+        const content = await fs.readFile(filePaths[0], 'utf-8');
+        currentFilePath = filePaths[0];
         isUnsaved = false;
         updateWindowTitle();
         mainWindow?.webContents.send('file-open', { content, filePath: currentFilePath });
     }
 }
 
-async function saveFile(): Promise<void> {
+async function openFolder() {
+    const { filePaths } = await dialog.showOpenDialog(mainWindow!, {
+        properties: ['openDirectory']
+    });
+
+    if (filePaths && filePaths.length > 0) {
+        currentFolderPath = filePaths[0];
+        const tree = await buildFileTree(currentFolderPath);
+        mainWindow?.webContents.send('folder-opened', { folderPath: currentFolderPath, tree });
+    }
+}
+
+async function buildFileTree(dirPath: string): Promise<FileTreeNode[]> {
+    const items = await fs.readdir(dirPath, { withFileTypes: true });
+    const tree: FileTreeNode[] = [];
+
+    for (const item of items) {
+        if (item.name.startsWith('.')) continue; // Skip hidden files
+
+        const fullPath = path.join(dirPath, item.name);
+        const node: FileTreeNode = {
+            name: item.name,
+            path: fullPath,
+            isDirectory: item.isDirectory()
+        };
+
+        if (item.isDirectory()) {
+            node.children = await buildFileTree(fullPath);
+        }
+
+        tree.push(node);
+    }
+
+    // Sort: directories first, then files, both alphabetically
+    tree.sort((a, b) => {
+        if (a.isDirectory !== b.isDirectory) {
+            return a.isDirectory ? -1 : 1;
+        }
+        return a.name.localeCompare(b.name);
+    });
+
+    return tree;
+}
+
+async function readFileContent(filePath: string) {
+    try {
+        const content = await fs.readFile(filePath, 'utf-8');
+        currentFilePath = filePath;
+        isUnsaved = false;
+        updateWindowTitle();
+        mainWindow?.webContents.send('file-open', { content, filePath });
+        return { content };
+    } catch (error: any) {
+        return { error: error.message };
+    }
+}
+
+async function saveFile() {
     if (!currentFilePath) {
         return saveFileAs();
     }
 
     const content = await getEditorContent();
-    await fs.writeFile(currentFilePath, content, 'utf-8');
+    await fs.writeFile(currentFilePath, content as string, 'utf-8');
     isUnsaved = false;
     updateWindowTitle();
     mainWindow?.webContents.send('file-saved');
 }
 
-async function saveFileAs(): Promise<void> {
-    const result = await dialog.showSaveDialog(mainWindow!, {
+async function saveFileAs() {
+    const { filePath } = await dialog.showSaveDialog(mainWindow!, {
         filters: [{ name: 'Markdown Files', extensions: ['md', 'markdown', 'txt'] }],
         defaultPath: currentFilePath || 'untitled.md'
     });
 
-    if (result.filePath) {
+    if (filePath) {
         const content = await getEditorContent();
-        await fs.writeFile(result.filePath, content, 'utf-8');
-        currentFilePath = result.filePath;
+        await fs.writeFile(filePath, content as string, 'utf-8');
+        currentFilePath = filePath;
         isUnsaved = false;
         updateWindowTitle();
-        mainWindow?.webContents.send('file-saved', { filePath: result.filePath });
+        mainWindow?.webContents.send('file-saved', { filePath });
     }
 }
 
-async function showUnsavedDialog(): Promise<string> {
-    const result = await dialog.showMessageBox(mainWindow!, {
+async function showUnsavedDialog() {
+    const { response } = await dialog.showMessageBox(mainWindow!, {
         type: 'warning',
         buttons: ['保存', '不保存', '取消'],
         defaultId: 0,
@@ -294,10 +346,10 @@ async function showUnsavedDialog(): Promise<string> {
         detail: '您是否要保存对文件的更改？'
     });
 
-    return ['save', 'dont-save', 'cancel'][result.response];
+    return ['save', 'dont-save', 'cancel'][response];
 }
 
-function showAboutDialog(): void {
+function showAboutDialog() {
     dialog.showMessageBox(mainWindow!, {
         type: 'info',
         buttons: ['确定'],
@@ -307,7 +359,7 @@ function showAboutDialog(): void {
     });
 }
 
-function showMarkdownHelp(): void {
+function showMarkdownHelp() {
     dialog.showMessageBox(mainWindow!, {
         type: 'info',
         buttons: ['确定'],
@@ -342,19 +394,16 @@ function showMarkdownHelp(): void {
 
 function getEditorContent(): Promise<string> {
     return new Promise((resolve) => {
-        const handler = (_: IpcMainEvent, content: string) => {
-            ipcMain.removeListener('editor-content-response', handler);
-            resolve(content);
-        };
-        ipcMain.on('editor-content-response', handler);
+        ipcMain.once('editor-content-response', (_: Event, content: string) => resolve(content));
         mainWindow?.webContents.send('get-editor-content');
     });
 }
 
-function updateWindowTitle(): void {
+function updateWindowTitle() {
+    if (!mainWindow) return;
     const title = isUnsaved ? '● ' : '';
     const fileName = currentFilePath ? path.basename(currentFilePath) : '未命名';
-    mainWindow?.setTitle(`${title}${fileName} - 花洲 Markdown 编辑器`);
+    mainWindow.setTitle(`${title}${fileName} - 花洲 Markdown 编辑器`);
 }
 
 // IPC handlers
@@ -367,6 +416,21 @@ ipcMain.on('editor-changed', () => {
 
 ipcMain.on('get-editor-content', () => {
     // This will be handled in renderer and send back via 'editor-content-response'
+});
+
+ipcMain.on('read-file-from-tree', async (_: Event, filePath: string) => {
+    const result = await readFileContent(filePath);
+    if (result.error) {
+        dialog.showErrorBox('读取文件错误', result.error);
+    }
+});
+
+ipcMain.on('save-current-file', async (_: Event, content: string) => {
+    if (currentFilePath) {
+        await fs.writeFile(currentFilePath, content, 'utf-8');
+        isUnsaved = false;
+        updateWindowTitle();
+    }
 });
 
 app.whenReady().then(createWindow);
