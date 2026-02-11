@@ -1,0 +1,68 @@
+{
+  "name": "huazhou-markdown-editor",
+  "version": "1.0.0",
+  "description": "A modern Markdown desktop editor built with Electron",
+  "main": "dist/main.js",
+  "author": "Huazhou Technology",
+  "license": "MIT",
+  "scripts": {
+    "compile": "tsc && copyfiles src/index.html src/editor.css dist",
+    "watch": "tsc --watch",
+    "start": "npm run compile && electron .",
+    "dev": "npm run compile && electron . --dev",
+    "build:win": "npm run compile && electron-builder --win",
+    "build:mac": "npm run compile && electron-builder --mac",
+    "build:linux": "npm run compile && electron-builder --linux"
+  },
+  "build": {
+    "appId": "com.huazhou.markdown-editor",
+    "productName": "花洲 Markdown 编辑器",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "dist/**/*",
+      "resources/**/*",
+      "src/index.html",
+      "src/editor.css"
+    ],
+    "win": {
+      "target": [
+        "nsis",
+        "portable"
+      ],
+      "icon": "resources/icon.ico"
+    },
+    "mac": {
+      "target": [
+        "dmg",
+        "zip"
+      ],
+      "icon": "resources/icon.icns",
+      "category": "public.app-category.productivity"
+    },
+    "linux": {
+      "target": [
+        "AppImage",
+        "deb"
+      ],
+      "icon": "resources/icon.png",
+      "category": "Office"
+    }
+  },
+  "dependencies": {
+    "codemirror": "^5.65.16",
+    "marked": "^12.0.0"
+  },
+  "devDependencies": {
+    "@types/codemirror": "^5.60.17",
+    "@types/electron": "^1.4.38",
+    "@types/marked": "^5.0.2",
+    "@types/node": "^25.2.3",
+    "copyfiles": "^2.4.1",
+    "electron": "^28.0.0",
+    "electron-builder": "^24.9.1",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.9.3"
+  }
+}
