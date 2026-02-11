@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue';
+import { ref, onMounted } from 'vue';
 import Toolbar from './components/Toolbar.vue';
 import EditorPanel from './components/EditorPanel.vue';
 import PreviewPanel from './components/PreviewPanel.vue';
-import FileTreeSidebar from './components/FileTreeSidebar.vue';
+import FileTreeSidebar, { FileTreeNode } from './components/FileTreeSidebar.vue';
 import TableOfContents from './components/TableOfContents.vue';
 import StatusBar from './components/StatusBar.vue';
 import { useTheme } from './composables/useTheme';
@@ -17,6 +17,7 @@ const editorContent = ref('');
 const fileTreeVisible = ref(false);
 const tocVisible = ref(false);
 const syncScroll = ref(true);
+const fileTreeData = ref<FileTreeNode[]>([]);
 
 // Theme
 const { currentTheme, toggleTheme, initTheme } = useTheme();
@@ -50,8 +51,8 @@ const setupIPCHandlers = () => {
       isUnsaved.value = false;
     });
 
-    window.electronAPI.onFileOpenFolder((_, { tree }) => {
-      window.dispatchEvent(new CustomEvent('file-tree-data', { detail: { tree } }));
+    window.electronAPI.onFolderOpened((_, { tree }) => {
+      fileTreeData.value = tree;
       fileTreeVisible.value = true;
     });
 
@@ -59,7 +60,6 @@ const setupIPCHandlers = () => {
       currentFilePath.value = filePath;
       editorContent.value = content;
       isUnsaved.value = false;
-      window.dispatchEvent(new CustomEvent('editor-content-update', { detail: { content } }));
     });
 
     window.electronAPI.onFileSaved((_, data) => {
@@ -153,6 +153,12 @@ const closeFileTree = () => {
 const closeTOC = () => {
   tocVisible.value = false;
 };
+
+// Handle file select from file tree
+const handleFileSelect = (node: FileTreeNode) => {
+  // File reading is handled by the main process via IPC
+  // The content will be received through the onFileOpen handler
+};
 </script>
 
 <template>
@@ -173,13 +179,16 @@ const closeTOC = () => {
       <!-- File Tree Sidebar -->
       <FileTreeSidebar
         v-if="fileTreeVisible"
+        :tree="fileTreeData"
         @close="closeFileTree"
+        @file-select="handleFileSelect"
       />
 
       <!-- Content Area -->
       <div class="content-area">
         <EditorPanel
           :view-mode="currentViewMode"
+          :content="editorContent"
           @content-change="handleContentChange"
         />
 
@@ -219,7 +228,7 @@ const closeTOC = () => {
 .content-area {
   flex: 1;
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   overflow: hidden;
 }
 </style>

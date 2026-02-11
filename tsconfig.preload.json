@@ -1,7 +1,7 @@
 {
   "extends": "./tsconfig.json",
   "compilerOptions": {
-    "outDir": "distRenderer",
+    "outDir": "dist",
     "rootDir": "src",
     "target": "ES2020",
     "module": "CommonJS",
@@ -9,5 +9,5 @@
     "skipLibCheck": true
   },
   "include": ["src/preload.ts"],
-  "exclude": ["node_modules", "dist", "distRenderer", "src/renderer", "src/index.vue.html"]
+  "exclude": ["node_modules", "dist", "src/renderer"]
 }

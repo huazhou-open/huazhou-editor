@@ -6,13 +6,13 @@
   "author": "Huazhou Technology",
   "license": "MIT",
   "scripts": {
-    "compile": "tsc && copyfiles src/preload.ts distRenderer && tsc -p tsconfig.preload.json && tsc -p tsconfig.main.json && vite build && copyfiles src/editor.css distRenderer",
-    "compile:main": "tsc -p tsconfig.main.json && copyfiles src/preload.ts distRenderer && tsc -p tsconfig.preload.json",
+    "compile": "tsc && copyfiles src/preload.ts dist && tsc -p tsconfig.preload.json && tsc -p tsconfig.main.json && vite build && copyfiles src/editor.css dist",
+    "compile:main": "tsc -p tsconfig.main.json && copyfiles src/preload.ts dist && tsc -p tsconfig.preload.json",
     "watch": "vite build --watch",
     "dev:renderer": "vite",
-    "dev": "npm run compile:main && vite build && copyfiles src/index.vue.html dist/index.html && electron . --dev",
+    "dev": "npm run compile:main && vite build && sh -c 'cat src/index.html > dist/index.html' && electron . --dev",
     "start": "npm run compile && electron .",
-    "build:renderer": "vite build && copyfiles src/index.vue.html dist/index.html",
+    "build:renderer": "vite build && sh -c 'cat src/index.html > dist/index.html'",
     "build:win": "npm run compile && electron-builder --win",
     "build:mac": "npm run compile && electron-builder --mac",
     "build:linux": "npm run compile && electron-builder --linux"
@@ -25,9 +25,7 @@
     },
     "files": [
       "dist/**/*",
-      "distRenderer/**/*",
-      "resources/**/*",
-      "src/editor.css"
+      "resources/**/*"
     ],
     "win": {
       "target": [
@@ -68,6 +66,7 @@
     "copyfiles": "^2.4.1",
     "electron": "^28.0.0",
     "electron-builder": "^24.9.1",
+    "terser": "^5.46.0",
     "ts-node": "^10.9.2",
     "typescript": "^5.9.3"
   }

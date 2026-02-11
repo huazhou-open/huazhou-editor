@@ -69,12 +69,16 @@ onMounted(() => {
 .preview-panels {
   flex: 1;
   display: flex;
+  flex-direction: column;
   overflow: hidden;
+  min-width: 0;
 }
 
 .split-mode {
+  flex: 1;
   display: flex;
-  width: 100%;
+  flex-direction: column;
+  overflow: hidden;
 }
 
 .preview-panel {
@@ -90,6 +94,7 @@ onMounted(() => {
   padding: 8px 16px;
   background-color: var(--bg-secondary);
   border-bottom: 1px solid var(--border-color);
+  flex-shrink: 0;
 }
 
 .panel-title {

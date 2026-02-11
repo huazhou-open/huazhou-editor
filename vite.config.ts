@@ -10,16 +10,17 @@ export default defineConfig({
     }
   },
   build: {
-    outDir: 'distRenderer',
-    emptyOutDir: true,
+    outDir: 'dist',
+    emptyOutDir: false,
+    minify: 'terser',
     rollupOptions: {
       input: {
-        main: resolve(__dirname, 'src/renderer/main.ts')
+        renderer: resolve(__dirname, 'src/renderer/main.ts')
       },
       output: {
         entryFileNames: '[name].js',
-        chunkFileNames: '[name].js',
-        assetFileNames: '[name][extname]'
+        chunkFileNames: '[name]-[hash].js',
+        assetFileNames: '[name]-[hash][extname]'
       }
     }
   },

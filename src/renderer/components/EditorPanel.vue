@@ -5,6 +5,7 @@ import { useFormat } from '../composables/useFormat';
 
 const props = defineProps<{
   viewMode: 'split' | 'inline';
+  content: string;
 }>();
 
 const emit = defineEmits<{
@@ -145,17 +146,6 @@ onMounted(() => {
   // Listen for action events
   window.addEventListener('editor-action', handleAction);
 
-  // Listen for content update from parent
-  window.addEventListener('editor-content-update', (e) => {
-    const detail = (e as CustomEvent).detail;
-    const activeEditor = getActiveEditor();
-    if (activeEditor) {
-      activeEditor.setValue(detail.content);
-      if (splitEditor.value) splitEditor.value.setValue(detail.content);
-      if (inlineEditor.value) inlineEditor.value.setValue(detail.content);
-    }
-  });
-
   // Listen for view mode changes
   window.addEventListener('view-mode-change', (e) => {
     const detail = (e as CustomEvent).detail;
@@ -178,6 +168,20 @@ watch(() => props.viewMode, (newMode) => {
   const activeEditor = getActiveEditor();
   if (activeEditor) {
     activeEditor.focus();
+  }
+});
+
+// Watch for content changes from parent
+watch(() => props.content, (newContent) => {
+  const activeEditor = getActiveEditor();
+  if (activeEditor && activeEditor.getValue() !== newContent) {
+    activeEditor.setValue(newContent);
+    if (splitEditor.value && splitEditor.value !== activeEditor) {
+      splitEditor.value.setValue(newContent);
+    }
+    if (inlineEditor.value && inlineEditor.value !== activeEditor) {
+      inlineEditor.value.setValue(newContent);
+    }
   }
 });
 </script>
@@ -209,19 +213,22 @@ watch(() => props.viewMode, (newMode) => {
 .editor-panels {
   flex: 1;
   display: flex;
+  flex-direction: column;
   overflow: hidden;
+  min-width: 0;
 }
 
 .split-mode {
+  flex: 1;
   display: flex;
-  width: 100%;
+  flex-direction: column;
+  overflow: hidden;
 }
 
 .editor-panel {
   flex: 1;
   display: flex;
   flex-direction: column;
-  border-right: 1px solid var(--border-color);
   overflow: hidden;
 }
 
@@ -231,6 +238,7 @@ watch(() => props.viewMode, (newMode) => {
   padding: 8px 16px;
   background-color: var(--bg-secondary);
   border-bottom: 1px solid var(--border-color);
+  flex-shrink: 0;
 }
 
 .panel-title {
