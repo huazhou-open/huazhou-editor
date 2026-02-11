@@ -9,6 +9,7 @@
     "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true,
     "moduleResolution": "node",
+    "outDir": "./dist",
     "noImplicitAny": true,
     "noUnusedLocals": false,
     "noUnusedParameters": false,
