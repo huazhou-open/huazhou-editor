@@ -44,13 +44,7 @@ const emitActionToChildren = (action: string, payload?: any) => {
 
 // IPC handlers
 const setupIPCHandlers = () => {
-  // File operations
   if (window.electronAPI) {
-    window.electronAPI.onFileNew((_) => {
-      editorContent.value = '';
-      isUnsaved.value = false;
-    });
-
     window.electronAPI.onFolderOpened((_, { tree }) => {
       fileTreeData.value = tree;
       fileTreeVisible.value = true;
@@ -60,64 +54,6 @@ const setupIPCHandlers = () => {
       currentFilePath.value = filePath;
       editorContent.value = content;
       isUnsaved.value = false;
-    });
-
-    window.electronAPI.onFileSaved((_, data) => {
-      isUnsaved.value = false;
-      if (data && data.filePath) {
-        currentFilePath.value = data.filePath;
-      }
-    });
-
-    window.electronAPI.onEditorFind((_) => {
-      window.dispatchEvent(new CustomEvent('editor-action', { detail: { action: 'find' } }));
-    });
-
-    window.electronAPI.onEditorReplace((_) => {
-      window.dispatchEvent(new CustomEvent('editor-action', { detail: { action: 'replace' } }));
-    });
-
-    window.electronAPI.onEditorZoom((_, { level }) => {
-      window.dispatchEvent(new CustomEvent('editor-action', { detail: { action: 'zoom', payload: { level } } }));
-    });
-
-    // Format actions
-    window.electronAPI.onFormatBold((_) => {
-      window.dispatchEvent(new CustomEvent('editor-action', { detail: { action: 'bold' } }));
-    });
-    window.electronAPI.onFormatItalic((_) => {
-      window.dispatchEvent(new CustomEvent('editor-action', { detail: { action: 'italic' } }));
-    });
-    window.electronAPI.onFormatStrikethrough((_) => {
-      window.dispatchEvent(new CustomEvent('editor-action', { detail: { action: 'strikethrough' } }));
-    });
-    window.electronAPI.onFormatHeading((_, { level }) => {
-      window.dispatchEvent(new CustomEvent('editor-action', { detail: { action: 'heading', payload: { level } } }));
-    });
-    window.electronAPI.onFormatCode((_) => {
-      window.dispatchEvent(new CustomEvent('editor-action', { detail: { action: 'code' } }));
-    });
-    window.electronAPI.onFormatQuote((_) => {
-      window.dispatchEvent(new CustomEvent('editor-action', { detail: { action: 'quote' } }));
-    });
-    window.electronAPI.onFormatList((_) => {
-      window.dispatchEvent(new CustomEvent('editor-action', { detail: { action: 'list' } }));
-    });
-    window.electronAPI.onFormatLink((_) => {
-      window.dispatchEvent(new CustomEvent('editor-action', { detail: { action: 'link' } }));
-    });
-    window.electronAPI.onFormatImage((_) => {
-      window.dispatchEvent(new CustomEvent('editor-action', { detail: { action: 'image' } }));
-    });
-    window.electronAPI.onFormatTable((_) => {
-      window.dispatchEvent(new CustomEvent('editor-action', { detail: { action: 'table' } }));
-    });
-    window.electronAPI.onFormatHr((_) => {
-      window.dispatchEvent(new CustomEvent('editor-action', { detail: { action: 'hr' } }));
-    });
-
-    window.electronAPI.onGetEditorContent((_) => {
-      window.electronAPI.sendEditorContent(editorContent.value);
     });
   }
 };
@@ -157,7 +93,9 @@ const closeTOC = () => {
 // Handle file select from file tree
 const handleFileSelect = (node: FileTreeNode) => {
   // File reading is handled by the main process via IPC
-  // The content will be received through the onFileOpen handler
+  if (window.electronAPI) {
+    window.electronAPI.readFileFromTree(node.path);
+  }
 };
 </script>
 
