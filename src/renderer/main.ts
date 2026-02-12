@@ -1,6 +1,14 @@
 import { createApp } from 'vue';
 import App from './App.vue';
 
+// Import Element Plus
+import ElementPlus from 'element-plus';
+import 'element-plus/dist/index.css';
+import 'element-plus/theme-chalk/dark/css-vars.css';
+
+// Import Element Plus Icons
+import * as ElementPlusIconsVue from '@element-plus/icons-vue';
+
 // Import CodeMirror and dependencies
 import CodeMirror from 'codemirror';
 import 'codemirror/lib/codemirror.css';
@@ -43,9 +51,22 @@ declare global {
       sendEditorChanged: () => void;
       readFileFromTree: (path: string) => void;
       saveCurrentFile: (content: string) => void;
+      readConfig: () => Promise<any>;
+      writeConfig: (config: any) => Promise<any>;
+      getConfigPath: () => Promise<string>;
+      onOpenConfig: (callback: () => void) => void;
     };
   }
 }
 
 const app = createApp(App);
+
+// Use Element Plus
+app.use(ElementPlus);
+
+// Register all icons
+for (const [key, component] of Object.entries(ElementPlusIconsVue)) {
+  app.component(key, component);
+}
+
 app.mount('#app');

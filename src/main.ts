@@ -1,11 +1,15 @@
 import { app, BrowserWindow, Menu, dialog, ipcMain, Event } from 'electron';
 import path from 'path';
 import { promises as fs } from 'fs';
+import { randomUUID } from 'crypto';
 
 let mainWindow: BrowserWindow | null = null;
 let currentFilePath: string | null = null;
 let currentFolderPath: string | null = null;
 let isUnsaved = false;
+
+// Config file path
+const CONFIG_FILE_NAME = 'model.json';
 
 interface FileTreeNode {
   name: string;
@@ -52,6 +56,29 @@ function createMenu() {
                 {
                     label: '打开文件夹...',
                     click: () => openFolder()
+                }
+            ]
+        },
+        {
+            label: '视图',
+            submenu: [
+                {
+                    label: '切换开发者工具',
+                    accelerator: 'F12',
+                    click: () => {
+                        mainWindow?.webContents.toggleDevTools();
+                    }
+                }
+            ]
+        },
+        {
+            label: '配置',
+            submenu: [
+                {
+                    label: '配置...',
+                    click: () => {
+                        mainWindow?.webContents.send('open-config');
+                    }
                 }
             ]
         }
@@ -146,6 +173,47 @@ ipcMain.on('save-current-file', async (_: Event, content: string) => {
         isUnsaved = false;
         updateWindowTitle();
     }
+});
+
+// Config IPC handlers
+function getConfigFilePath(): string {
+    return path.join(process.cwd(), CONFIG_FILE_NAME);
+}
+
+ipcMain.handle('config:get-path', async () => {
+    return getConfigFilePath();
+});
+
+ipcMain.handle('config:read', async () => {
+    const configPath = getConfigFilePath();
+    try {
+        const content = await fs.readFile(configPath, 'utf-8');
+        return JSON.parse(content);
+    } catch (error: any) {
+        if (error.code === 'ENOENT') {
+            // File doesn't exist, return default config
+            return {
+                version: '1.0.0',
+                platforms: []
+            };
+        }
+        throw error;
+    }
+});
+
+ipcMain.handle('config:write', async (_: Event, config: any) => {
+    const configPath = getConfigFilePath();
+    const configDir = path.dirname(configPath);
+
+    // Ensure directory exists
+    try {
+        await fs.mkdir(configDir, { recursive: true });
+    } catch (error) {
+        // Ignore error if directory already exists
+    }
+
+    await fs.writeFile(configPath, JSON.stringify(config, null, 2), 'utf-8');
+    return { success: true };
 });
 
 app.whenReady().then(createWindow);

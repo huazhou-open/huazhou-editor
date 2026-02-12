@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm run compile:main:*)",
+      "Bash(npm install)",
+      "Bash(npm run dev)",
+      "Bash(copy srcindex.html distindex.html)",
+      "Bash(electron . --dev)",
+      "Bash(npx electron:*)",
+      "Bash(npm run compile)",
+      "Bash(npm install:*)"
+    ]
+  }
+}

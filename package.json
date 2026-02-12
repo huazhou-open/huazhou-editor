@@ -6,13 +6,13 @@
   "author": "Huazhou Technology",
   "license": "MIT",
   "scripts": {
-    "compile": "tsc && copyfiles src/preload.ts dist && tsc -p tsconfig.preload.json && tsc -p tsconfig.main.json && vite build && copyfiles src/editor.css dist",
+    "compile": "tsc && copyfiles src/preload.ts dist && tsc -p tsconfig.preload.json && tsc -p tsconfig.main.json && vite build && node scripts/copy-css.js",
     "compile:main": "tsc -p tsconfig.main.json && copyfiles src/preload.ts dist && tsc -p tsconfig.preload.json",
     "watch": "vite build --watch",
     "dev:renderer": "vite",
-    "dev": "npm run compile:main && vite build && sh -c 'cat src/index.html > dist/index.html' && electron . --dev",
+    "dev": "npm run compile:main && vite build && node scripts/copy-css.js && electron . --dev",
     "start": "npm run compile && electron .",
-    "build:renderer": "vite build && sh -c 'cat src/index.html > dist/index.html'",
+    "build:renderer": "vite build && node scripts/copy-css.js",
     "build:win": "npm run compile && electron-builder --win",
     "build:mac": "npm run compile && electron-builder --mac",
     "build:linux": "npm run compile && electron-builder --linux"
@@ -60,14 +60,18 @@
     "vue-tsc": "^3.2.4"
   },
   "devDependencies": {
+    "@element-plus/icons-vue": "^2.3.2",
     "@types/codemirror": "^5.60.17",
     "@types/marked": "^5.0.2",
     "@types/node": "^25.2.3",
     "copyfiles": "^2.4.1",
     "electron": "^28.0.0",
     "electron-builder": "^24.9.1",
+    "element-plus": "^2.13.2",
     "terser": "^5.46.0",
     "ts-node": "^10.9.2",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "unplugin-auto-import": "^21.0.0",
+    "unplugin-vue-components": "^31.0.0"
   }
 }
