@@ -1,0 +1,59 @@
+{
+  "name": "zhixiao-note",
+  "version": "0.0.1",
+  "description": "知晓笔记 - A Vue3 + Electron + Element Plus + TypeScript desktop application",
+  "main": "out/main/index.js",
+  "author": "zhixiao",
+  "license": "MIT",
+  "scripts": {
+    "dev": "ELECTRON_DISABLE_SANDBOX=1 electron-vite dev",
+    "build": "electron-vite build",
+    "preview": "electron-vite preview",
+    "build:win": "npm run build && electron-builder --win",
+    "build:mac": "npm run build && electron-builder --mac",
+    "build:linux": "npm run build && electron-builder --linux"
+  },
+  "dependencies": {
+    "@element-plus/icons-vue": "^2.3.1",
+    "element-plus": "^2.9.1",
+    "vue": "^3.5.13"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^5.2.1",
+    "electron": "^34.0.0",
+    "electron-builder": "^25.1.8",
+    "electron-vite": "^2.3.0",
+    "sass": "^1.97.3",
+    "typescript": "^5.7.3",
+    "vue-tsc": "^2.2.0"
+  },
+  "build": {
+    "appId": "com.zhixiao.note",
+    "productName": "知晓笔记",
+    "directories": {
+      "output": "release",
+      "buildResources": "build"
+    },
+    "files": [
+      "out/**/*"
+    ],
+    "win": {
+      "target": [
+        "nsis"
+      ],
+      "icon": "build/icon.ico"
+    },
+    "mac": {
+      "target": [
+        "dmg"
+      ],
+      "icon": "build/icon.icns"
+    },
+    "linux": {
+      "target": [
+        "AppImage"
+      ],
+      "icon": "build/icon.png"
+    }
+  }
+}
