@@ -6,6 +6,11 @@ const ROOT_PATH = {
   preload: path.join(__dirname, "../preload")
 };
 let win = null;
+function navigateTo(path2) {
+  if (win) {
+    win.webContents.send("navigate", path2);
+  }
+}
 function createMenu() {
   const template = [
     {
@@ -22,7 +27,18 @@ function createMenu() {
         { type: "separator" },
         { role: "cut", label: "剪切" },
         { role: "copy", label: "复制" },
-        { role: "paste", label: "粘贴" }
+        { role: "paste", label: "粘贴" },
+        { role: "selectAll", label: "全选" }
+      ]
+    },
+    {
+      label: "设置",
+      submenu: [
+        {
+          label: "打开设置",
+          accelerator: "CmdOrCtrl+,",
+          click: () => navigateTo("/settings")
+        }
       ]
     },
     {

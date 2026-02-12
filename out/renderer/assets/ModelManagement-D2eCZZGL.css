@@ -1,0 +1,11 @@
+.model-management .page-header[data-v-8ddceb69] {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+.model-management .page-header h2[data-v-8ddceb69] {
+  margin: 0;
+  font-size: 20px;
+  color: #303133;
+}

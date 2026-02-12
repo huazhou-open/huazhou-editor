@@ -108,3 +108,11 @@ contextBridge.exposeInMainWorld('electronAPI', {
   yourMethod: (arg: string) => ipcRenderer.invoke('your-channel', arg)
 })
 ```
+
+## 开发工作流
+
+**每次修改完毕后必须执行以下检查：**
+
+1. **检查依赖引入** - 确认所有新引入的模块/组件已正确导入
+2. **运行应用验证** - 执行 `npm run dev` 启动开发模式，检查是否有报错
+3. **构建验证** - 必要时执行 `npm run build` 验证生产构建无错误

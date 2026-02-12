@@ -17,6 +17,11 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // Example: remove listener
   removeListener: (channel: string, callback: (...args: unknown[]) => void) => {
     ipcRenderer.removeListener(channel, callback)
+  },
+
+  // Listen for navigation events from main process menu
+  onNavigate: (callback: (path: string) => void) => {
+    ipcRenderer.on('navigate', (_event, path) => callback(path))
   }
 })
 
@@ -28,6 +33,7 @@ declare global {
       onMessage: (callback: (message: string) => void) => void
       invoke: (channel: string, ...args: unknown[]) => Promise<unknown>
       removeListener: (channel: string, callback: (...args: unknown[]) => void) => void
+      onNavigate: (callback: (path: string) => void) => void
     }
   }
 }

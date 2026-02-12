@@ -23,6 +23,11 @@ export interface ElectronAPI {
    * 移除监听器
    */
   removeListener: (channel: string, callback: (...args: unknown[]) => void) => void
+
+  /**
+   * 监听来自主进程菜单的导航事件
+   */
+  onNavigate: (callback: (path: string) => void) => void
 }
 
 /**

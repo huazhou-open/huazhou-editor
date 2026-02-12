@@ -18,6 +18,13 @@ const ROOT_PATH = {
 
 let win: BrowserWindow | null = null
 
+// 发送导航消息到渲染进程
+function navigateTo(path: string) {
+  if (win) {
+    win.webContents.send('navigate', path)
+  }
+}
+
 // 创建应用菜单
 function createMenu() {
   const template: Electron.MenuItemConstructorOptions[] = [
@@ -25,6 +32,28 @@ function createMenu() {
       label: '文件',
       submenu: [
         { role: 'quit', label: '退出' }
+      ]
+    },
+    {
+      label: '编辑',
+      submenu: [
+        { role: 'undo', label: '撤销' },
+        { role: 'redo', label: '重做' },
+        { type: 'separator' },
+        { role: 'cut', label: '剪切' },
+        { role: 'copy', label: '复制' },
+        { role: 'paste', label: '粘贴' },
+        { role: 'selectAll', label: '全选' }
+      ]
+    },
+    {
+      label: '设置',
+      submenu: [
+        {
+          label: '打开设置',
+          accelerator: 'CmdOrCtrl+,',
+          click: () => navigateTo('/settings')
+        }
       ]
     },
     {

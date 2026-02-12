@@ -1,0 +1,32 @@
+.settings-group[data-v-b6650cb0] {
+  height: 100%;
+}
+.settings-menu[data-v-b6650cb0] {
+  height: 100%;
+  border-right: none;
+  background: transparent;
+}
+.el-menu-item[data-v-b6650cb0]:hover {
+  background: #f2f6fc;
+}
+.el-menu-item.is-active[data-v-b6650cb0] {
+  background: #409eff;
+  color: white;
+}.settings-container[data-v-da5877b5] {
+  width: 100%;
+  height: 100vh;
+  overflow: hidden;
+  background: #f5f7fa;
+}
+.settings-content[data-v-da5877b5] {
+  height: 100%;
+  background: white;
+}
+.el-aside[data-v-da5877b5] {
+  border-right: 1px solid #e4e7ed;
+  background: #f5f7fa;
+}
+.el-main[data-v-da5877b5] {
+  padding: 24px;
+  overflow-y: auto;
+}

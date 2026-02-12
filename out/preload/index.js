@@ -12,5 +12,9 @@ electron.contextBridge.exposeInMainWorld("electronAPI", {
   // Example: remove listener
   removeListener: (channel, callback) => {
     electron.ipcRenderer.removeListener(channel, callback);
+  },
+  // Listen for navigation events from main process menu
+  onNavigate: (callback) => {
+    electron.ipcRenderer.on("navigate", (_event, path) => callback(path));
   }
 });
