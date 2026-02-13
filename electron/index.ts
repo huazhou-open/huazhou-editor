@@ -1,5 +1,7 @@
-import { app, BrowserWindow, Menu } from 'electron'
+import { app, BrowserWindow, Menu, ipcMain, dialog } from 'electron'
 import path from 'path'
+import fs from 'fs'
+import { promisify } from 'util'
 
 // The built directory structure
 //
@@ -13,7 +15,14 @@ import path from 'path'
 
 const ROOT_PATH = {
   dist: path.join(__dirname, '../renderer'),
-  preload: path.join(__dirname, '../preload')
+  preload: path.join(__dirname, '../preload'),
+  configDir: path.join(process.cwd(), 'config'),
+  configFile: path.join(process.cwd(), 'config', 'model.json')
+}
+
+// 确保 config 目录存在
+if (!fs.existsSync(ROOT_PATH.configDir)) {
+  fs.mkdirSync(ROOT_PATH.configDir, { recursive: true })
 }
 
 let win: BrowserWindow | null = null
@@ -25,12 +34,76 @@ function navigateTo(path: string) {
   }
 }
 
+// 读取配置文件
+function loadConfig() {
+  try {
+    if (fs.existsSync(ROOT_PATH.configFile)) {
+      const data = fs.readFileSync(ROOT_PATH.configFile, 'utf-8')
+      const config = JSON.parse(data)
+      console.log('Config loaded from:', config)
+      return config.providers || []
+    }
+    console.log('Config file not found, returning empty array')
+    return []
+  } catch (error) {
+    console.error('Error loading config:', error)
+    return []
+  }
+}
+
+// 保存配置文件
+function saveConfig(providers: unknown[]) {
+  try {
+    const config = { providers }
+    fs.writeFileSync(ROOT_PATH.configFile, JSON.stringify(config, null, 2), 'utf-8')
+    console.log('Config saved to:', ROOT_PATH.configFile)
+    return { success: true }
+  } catch (error) {
+    console.error('Error saving config:', error)
+    return { success: false, error: String(error) }
+  }
+}
+
+// IPC 处理器
+// 获取所有提供商
+ipcMain.handle('get-providers', () => {
+  console.log('get-providers called')
+  return loadConfig()
+})
+
+// 保存提供商列表
+ipcMain.handle('save-providers', (_event, providers: unknown[]) => {
+  console.log('save-providers called with:', providers)
+  return saveConfig(providers)
+})
+
 // 创建应用菜单
 function createMenu() {
   const template: Electron.MenuItemConstructorOptions[] = [
     {
       label: '文件',
       submenu: [
+        {
+          label: '打开文件夹',
+          accelerator: 'CmdOrCtrl+O',
+          click: async () => {
+            const result = await dialog.showOpenDialog({
+              properties: ['openDirectory'],
+              title: '选择文件夹'
+            })
+            if (!result.canceled && result.filePaths.length > 0) {
+              const folderPath = result.filePaths[0]
+              const fileTree = await loadMarkdownFiles(folderPath)
+              if (win) {
+                win.webContents.send('folder-opened', {
+                  folderPath,
+                  fileTree
+                })
+              }
+            }
+          }
+        },
+        { type: 'separator' },
         { role: 'quit', label: '退出' }
       ]
     },
@@ -147,5 +220,150 @@ app.whenReady().then(() => {
   createWindow()
 })
 
+// 文件/文件夹节点接口
+interface FileNode {
+  id: string
+  name: string
+  path: string
+  type: 'file' | 'folder'
+  children?: FileNode[]
+}
+
+// 递归扫描文件夹
+async function scanDirectory(dirPath: string): Promise<FileNode[]> {
+  try {
+    const entries = await promisify(fs.readdir)(dirPath, { withFileTypes: true } as never)
+    const nodes: FileNode[] = []
+
+    for (const entry of entries) {
+      const fullPath = path.join(dirPath, entry.name)
+      const id = fullPath.replace(/\\/g, '/')
+
+      if (entry.isDirectory()) {
+        // 递归扫描子文件夹
+        const children = await scanDirectory(fullPath)
+        nodes.push({
+          id,
+          name: entry.name,
+          path: fullPath,
+          type: 'folder',
+          children
+        })
+      } else if (entry.isFile() && entry.name.toLowerCase().endsWith('.md')) {
+        // 只包含 .md 文件
+        nodes.push({
+          id,
+          name: entry.name,
+          path: fullPath,
+          type: 'file'
+        })
+      }
+    }
+
+    return nodes
+  } catch (error) {
+    console.error('Error scanning directory:', error)
+    return []
+  }
+}
+
+// 加载文件夹中的文件树
+async function loadMarkdownFiles(folderPath: string): Promise<FileNode[]> {
+  return scanDirectory(folderPath)
+}
+
+// 读取 Markdown 文件内容
+ipcMain.handle('read-markdown-file', async (_event, filePath: string): Promise<string> => {
+  try {
+    console.log('Reading file:', filePath)
+    const content = await promisify(fs.readFile)(filePath, 'utf-8')
+    console.log('File read successfully, length:', content.length)
+    return content
+  } catch (error) {
+    console.error('Error reading markdown file:', error)
+    console.error('File path was:', filePath)
+    return ''
+  }
+})
+
+// 保存 Markdown 文件内容
+ipcMain.handle('save-markdown-file', async (_event, filePath: string, content: string): Promise<boolean> => {
+  try {
+    await promisify(fs.writeFile)(filePath, content, 'utf-8')
+    return true
+  } catch (error) {
+    console.error('Error saving markdown file:', error)
+    return false
+  }
+})
+
+// 删除文件
+ipcMain.handle('delete-file', async (_event, filePath: string): Promise<boolean> => {
+  try {
+    await promisify(fs.unlink)(filePath)
+    return true
+  } catch (error) {
+    console.error('Error deleting file:', error)
+    return false
+  }
+})
+
+// 重命名文件
+ipcMain.handle('rename-file', async (_event, oldPath: string, newPath: string): Promise<boolean> => {
+  try {
+    await promisify(fs.rename)(oldPath, newPath)
+    return true
+  } catch (error) {
+    console.error('Error renaming file:', error)
+    return false
+  }
+})
+
+// 新建文件
+ipcMain.handle('create-file', async (_event, filePath: string, content: string = ''): Promise<boolean> => {
+  try {
+    await promisify(fs.writeFile)(filePath, content, 'utf-8')
+    return true
+  } catch (error) {
+    console.error('Error creating file:', error)
+    return false
+  }
+})
+
+// 新建文件夹
+ipcMain.handle('create-folder', async (_event, folderPath: string): Promise<boolean> => {
+  try {
+    await promisify(fs.mkdir)(folderPath, { recursive: true })
+    return true
+  } catch (error) {
+    console.error('Error creating folder:', error)
+    return false
+  }
+})
+
+// 保存图片文件
+ipcMain.handle('save-image', async (_event, imageBuffer: Buffer, imagePath: string): Promise<string> => {
+  try {
+    // 确保目录存在
+    const dir = path.dirname(imagePath)
+    if (!fs.existsSync(dir)) {
+      await promisify(fs.mkdir)(dir, { recursive: true })
+    }
+    await promisify(fs.writeFile)(imagePath, imageBuffer)
+    console.log('Image saved to:', imagePath)
+    return imagePath
+  } catch (error) {
+    console.error('Error saving image:', error)
+    throw error
+  }
+})
+
 // Disable Hardware Acceleration for better compatibility
 app.disableHardwareAcceleration()
+
+// 禁用 GPU 加速
+app.commandLine.appendSwitch('disable-gpu')
+app.commandLine.appendSwitch('disable-software-rasterizer')
+app.commandLine.appendSwitch('disable-gpu-compositing')
+app.commandLine.appendSwitch('no-sandbox')
+app.commandLine.appendSwitch('in-process-gpu')

@@ -1,17 +1,27 @@
 // 配置相关类型定义
 
 /**
- * AI 模型配置
+ * AI 模型信息
  */
-export interface ModelConfig {
+export interface ModelInfo {
   id: string
   name: string
-  provider: string
-  apiKey?: string
-  apiEndpoint?: string
+  modelId: string // 模型唯一标识
+  maxTokens: number
+  temperature: number
+  enabled: boolean
   isDefault: boolean
-  maxTokens?: number
-  temperature?: number
+}
+
+/**
+ * 提供商配置
+ */
+export interface ProviderConfig {
+  id: string
+  name: string
+  apiEndpoint: string
+  apiKey: string
+  models: ModelInfo[]
 }
 
 /**
@@ -38,7 +48,7 @@ export interface AppearanceConfig {
  * 应用配置总接口
  */
 export interface AppConfig {
-  models: ModelConfig[]
+  providers: ProviderConfig[]
   basic: BasicConfig
   appearance: AppearanceConfig
 }

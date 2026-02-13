@@ -1,40 +1,11 @@
 <template>
   <div class="home-container">
-    <el-container>
-      <el-main>
-        <el-row :gutter="20">
-          <el-col :span="12">
-            <el-card class="welcome-card">
-              <template #header>
-                <div class="card-header">
-                  <el-icon><ElementPlus /></el-icon>
-                  <span>Welcome</span>
-                </div>
-              </template>
-              <p>您的 Electron + Vue3 + Element Plus + TypeScript 项目已就绪！</p>
-              <el-button type="primary" @click="handleClick">
-                Click Me
-              </el-button>
-              <p v-if="clickCount > 0">Clicked {{ clickCount }} times</p>
-            </el-card>
-          </el-col>
-          <el-col :span="12">
-            <el-card class="info-card">
-              <template #header>
-                <div class="card-header">
-                  <el-icon><InfoFilled /></el-icon>
-                  <span>Tech Stack</span>
-                </div>
-              </template>
-              <el-space wrap>
-                <el-tag type="success">Electron</el-tag>
-                <el-tag type="primary">Vue 3</el-tag>
-                <el-tag type="warning">TypeScript</el-tag>
-                <el-tag type="danger">Element Plus</el-tag>
-              </el-space>
-            </el-card>
-          </el-col>
-        </el-row>
+    <el-container class="container">
+      <el-aside width="300px" class="sidebar">
+        <DocumentTree @file-click="handleFileClick" />
+      </el-aside>
+      <el-main class="main-content">
+        <MarkdownEditor :file-to-load="selectedFile" />
       </el-main>
     </el-container>
   </div>
@@ -42,13 +13,13 @@
 
 <script setup lang="ts">
 import { ref } from 'vue'
-import { ElMessage } from 'element-plus'
+import DocumentTree from '@/components/markdown/DocumentTree.vue'
+import MarkdownEditor from '@/components/markdown/MarkdownEditor.vue'
 
-const clickCount = ref(0)
+const selectedFile = ref<string>('')
 
-const handleClick = () => {
-  clickCount.value++
-  ElMessage.success(`Button clicked ${clickCount.value} times!`)
+const handleFileClick = (filePath: string) => {
+  selectedFile.value = filePath
 }
 </script>
 
@@ -61,22 +32,19 @@ const handleClick = () => {
   background: $background-color-base;
 }
 
-.el-main {
-  padding: 20px;
-}
+.container {
+  height: 100%;
 
-.welcome-card,
-.info-card {
-  min-height: 200px;
-}
+  .sidebar {
+    background: #f8f9fa;
+    border-right: 1px solid #e0e0e0;
+    overflow: hidden;
+  }
 
-.card-header {
-  display: flex;
-  align-items: center;
-  gap: $spacing-sm;
-}
-
-.el-space {
-  margin-top: $spacing-sm;
+  .main-content {
+    background: #fff;
+    overflow: hidden;
+    padding: 0;
+  }
 }
 </style>

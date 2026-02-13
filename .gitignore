@@ -22,3 +22,4 @@ release
 *.njsproj
 *.sln
 *.sw?
+out/

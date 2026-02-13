@@ -16,5 +16,21 @@ electron.contextBridge.exposeInMainWorld("electronAPI", {
   // Listen for navigation events from main process menu
   onNavigate: (callback) => {
     electron.ipcRenderer.on("navigate", (_event, path) => callback(path));
-  }
+  },
+  // 模型配置相关
+  getProviders: () => electron.ipcRenderer.invoke("get-providers"),
+  saveProviders: (providers) => electron.ipcRenderer.invoke("save-providers", providers),
+  // Markdown 编辑器相关
+  readMarkdownFile: (filePath) => electron.ipcRenderer.invoke("read-markdown-file", filePath),
+  saveMarkdownFile: (filePath, content) => electron.ipcRenderer.invoke("save-markdown-file", filePath, content),
+  onFolderOpened: (callback) => {
+    electron.ipcRenderer.on("folder-opened", (_event, data) => callback(data));
+  },
+  // 文件操作相关
+  deleteFile: (filePath) => electron.ipcRenderer.invoke("delete-file", filePath),
+  renameFile: (oldPath, newPath) => electron.ipcRenderer.invoke("rename-file", oldPath, newPath),
+  createFile: (filePath, content) => electron.ipcRenderer.invoke("create-file", filePath, content),
+  createFolder: (folderPath) => electron.ipcRenderer.invoke("create-folder", folderPath),
+  // 图片操作相关
+  saveImage: (imageBuffer, imagePath) => electron.ipcRenderer.invoke("save-image", imageBuffer, imagePath)
 });

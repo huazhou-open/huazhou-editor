@@ -1,0 +1,11 @@
+{
+  "providers": [
+    {
+      "id": "1770883989227",
+      "name": "dd",
+      "apiEndpoint": "dd",
+      "apiKey": "dd",
+      "models": []
+    }
+  ]
+}
